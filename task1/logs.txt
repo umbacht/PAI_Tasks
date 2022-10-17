@@ -1,0 +1,41 @@
+Sender: LSF System <lsfadmin@eu-g1-007-1>
+Subject: Job 233981829: <python -u checker_client.py --results-dir /cluster/home/umbacht/PAI/task1> in cluster <euler> Exited
+
+Job <python -u checker_client.py --results-dir /cluster/home/umbacht/PAI/task1> was submitted from host <eu-login-32> by user <umbacht> in cluster <euler> at Mon Oct 17 17:41:05 2022
+Job was executed on host(s) <4*eu-g1-007-1>, in queue <normal.4h>, as user <umbacht> in cluster <euler> at Mon Oct 17 17:41:35 2022
+</cluster/home/umbacht> was used as the home directory.
+</cluster/home/umbacht/PAI/task1> was used as the working directory.
+Started at Mon Oct 17 17:41:35 2022
+Terminated at Mon Oct 17 17:45:30 2022
+Results reported at Mon Oct 17 17:45:30 2022
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python -u checker_client.py --results-dir /cluster/home/umbacht/PAI/task1
+------------------------------------------------------------
+
+TERM_MEMLIMIT: job killed after reaching LSF memory usage limit.
+Exited with exit code 137.
+
+Resource usage summary:
+
+    CPU time :                                   232.82 sec.
+    Max Memory :                                 14288 MB
+    Average Memory :                             4517.00 MB
+    Total Requested Memory :                     8192.00 MB
+    Delta Memory :                               -6096.00 MB
+    Max Swap :                                   -
+    Max Processes :                              3
+    Max Threads :                                4
+    Run time :                                   257 sec.
+    Turnaround time :                            265 sec.
+
+The output (if any) follows:
+
+
+Congratulations, you have passed the checks on public dataset. Your cost is 21.950
+Dumped check file to /cluster/home/umbacht/PAI/task1/results_check.byte
+Performing extended evaluation
+/cluster/shadow/.lsbatch/1666021265.233981829: line 8: 38119 Killed                  python -u checker_client.py --results-dir /cluster/home/umbacht/PAI/task1
