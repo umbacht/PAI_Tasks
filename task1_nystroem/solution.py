@@ -3,6 +3,8 @@ import typing
 from sklearn.gaussian_process.kernels import *
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.kernel_approximation import Nystroem
+from sklearn.linear_model import BayesianRidge
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
@@ -34,8 +36,9 @@ class Model(object):
         self.rng = np.random.default_rng(seed=0)
 
         # TODO: Add custom initialization for your model here if necessary
-        self.kernel = RBF(length_scale=1.0, length_scale_bounds=(1e-1, 1e3)) + WhiteKernel(noise_level=1, noise_level_bounds=(1e-10, 1e+1))
-        self.gp = GaussianProcessRegressor(kernel=self.kernel, n_restarts_optimizer=9)
+        self.bayesian_ridge = BayesianRidge()
+        self.kernel = RBF() + WhiteKernel()
+        self.nystroem_kernel = Nystroem(kernel=self.kernel, random_state=1, n_components=4000)
 
     def make_predictions(self, test_features: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -50,8 +53,14 @@ class Model(object):
         gp_mean = np.zeros(test_features.shape[0], dtype=float)
         gp_std = np.zeros(test_features.shape[0], dtype=float)
 
+        # Transform the data using the Nystroem approximation
+        test_features_transformed = self.nystroem_kernel.transform(test_features)
+        gp_mean, gp_std = self.bayesian_ridge.predict(test_features_transformed, return_std=True)
+
         # TODO: Use the GP posterior to form your predictions here
-        predictions = self.gp.predict(test_features)
+        # Predict the pollution concentration
+        predictions = gp_mean
+
         return predictions, gp_mean, gp_std
 
     def fitting_model(self, train_GT: np.ndarray,train_features: np.ndarray):
@@ -62,9 +71,9 @@ class Model(object):
         """
 
         # TODO: Fit your model here
-        # Perform GP regression
-        self.gp.fit(train_features, train_GT)
-
+        # Kernel approximation using Nystroem
+        transformed_X = self.nystroem_kernel.fit_transform(train_features)
+        self.bayesian_ridge.fit(transformed_X, train_GT)
         pass
 
 
