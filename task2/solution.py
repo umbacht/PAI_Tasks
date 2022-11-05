@@ -47,7 +47,7 @@ def run_solution(dataset_train: torch.utils.data.Dataset, data_dir: str = os.cur
     if not combined_model:
         
         # TODO General_1: Choose your approach here
-        approach = Approach.Dummy_Trainer
+        approach = Approach.MCDropout
 
         if approach == Approach.Dummy_Trainer:
             trainer = DummyTrainer(dataset_train=dataset_train)
@@ -253,15 +253,16 @@ class MNISTNet(nn.Module):
     def __init__(self,
                 in_features: int, 
                 out_features: int,
-                dropout_p=0,
-                dropout_at_eval=False
+                dropout_p=0.6,
+                dropout_at_eval=True
                 ):
         super().__init__()
         # TODO General_2: Play around with the network structure.
         # You could change the depth or width of the model
-        self.layer1 = nn.Linear(in_features,100)
-        self.layer2 = nn.Linear(100, 100)
-        self.layer3 = nn.Linear(100, out_features)
+        self.layer1 = nn.Linear(in_features,200)
+        self.layer2 = nn.Linear(200, 200)
+        self.layer3 = nn.Linear(200, 200)
+        self.layer4 = nn.Linear(200, out_features)
         self.dropout_p = dropout_p
         self.dropout_at_eval = dropout_at_eval
 
@@ -279,7 +280,7 @@ class MNISTNet(nn.Module):
                 training=self.training or self.dropout_at_eval
         )
 
-        class_probs = self.layer3(x)
+        class_probs = self.layer4(x)
         return class_probs
 
 class SelfMadeNetwork(nn.Module):
@@ -307,16 +308,18 @@ class DropoutTrainer(Framework):
 
         # Hyperparameters and general parameters
         # TODO: MC_Dropout_4. Do experiments and tune hyperparameters
-        self.batch_size = 128
+        self.batch_size = 256*2
         self.learning_rate = 1e-3
         self.num_epochs = 100
-        # torch.manual_seed(0) # set seed for reproducibility
+        torch.manual_seed(0) # set seed for reproducibility
         
         # TODO: MC_Dropout_1. Initialize the MC_Dropout network and optimizer here
         # You can check the Dummy Trainer above for intuition about what to do
-        self.network = None
-        self.optimizer = None
-        
+        self.network = MNISTNet(in_features=28*28,out_features=10)
+        self.train_loader = torch.utils.data.DataLoader(
+            dataset_train, batch_size=self.batch_size, shuffle=True, drop_last=True
+            )
+        self.optimizer = torch.optim.Adam(self.network.parameters(), lr=self.learning_rate)
 
     def train(self):
         self.network.train()
@@ -328,7 +331,12 @@ class DropoutTrainer(Framework):
                 self.network.zero_grad()
                 # TODO: MC_Dropout_2. Implement MCDropout training here
                 # You need to calculate the loss based on the literature
-                loss = None
+                # Calculate negative log likelihood loss
+
+                # Perform forward pass
+                current_logits = self.network(batch_x)
+
+                loss = F.nll_loss(F.log_softmax(current_logits, dim=1), batch_y, reduction='sum')
 
                 # Backpropagate to get the gradients
                 loss.backward()
@@ -348,7 +356,13 @@ class DropoutTrainer(Framework):
         # TODO: MC_Dropout_3. Implement your MC_dropout prediction here
         # You need to sample from your trained model here multiple times
         # in order to implement Monte Carlo integration
-        estimated_probability = None
+        # Make num_sample predictions and average them
+
+        estimated_probability = F.softmax(self.network(x), dim=1)
+        for i in range(num_sample-1):
+            estimated_probability += F.softmax(self.network(x), dim=1)
+
+        estimated_probability /= num_sample
         
         assert estimated_probability.shape == (x.shape[0], 10)  
         return estimated_probability
@@ -786,7 +800,7 @@ def evaluate(model:Framework, eval_loader: torch.utils.data.DataLoader, data_dir
     :param data_dir: Data directory from which additional datasets are loaded
     :param output_dir: Directory into which plots are saved
     """
-    print("evaulating")
+    print("Evaluating model")
     # Predict class probabilities on test data
     predicted_probabilities = model.predict(eval_loader)
 
