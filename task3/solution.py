@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import *
+
 domain = np.array([[0, 5]])
 SAFETY_THRESHOLD = 1.2
 SEED = 0
@@ -13,6 +16,10 @@ class BO_algo():
         """Initializes the algorithm with a parameter configuration. """
 
         # TODO: enter your code here
+        # Initialize GP model for f with matern kernel, variance 0.5, lengthscale 0.5 and smootheness parameter 2.5
+        self.objective_model = GaussianProcessRegressor(kernel=Matern(length_scale=0.5, nu=2.5))
+        # Initialize GP model for v with matern kernel, variance sqrt(2), lengthscale 0.5 and smootheness parameter 2.5
+        self.speed_model = GaussianProcessRegressor(kernel=Matern(length_scale=0.5, nu=2.5))
         pass
 
 
@@ -28,6 +35,8 @@ class BO_algo():
 
         # TODO: enter your code here
         # In implementing this function, you may use optimize_acquisition_function() defined below.
+        if self.p
+        
         raise NotImplementedError
 
 
