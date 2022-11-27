@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
-
-from sklearn.gaussian_process import GaussianProcessRegressor
+from scipy.stats import norm
 from sklearn.gaussian_process.kernels import *
+from sklearn.gaussian_process import GaussianProcessRegressor
 
 domain = np.array([[0, 5]])
 SAFETY_THRESHOLD = 1.2
@@ -16,11 +16,13 @@ class BO_algo():
         """Initializes the algorithm with a parameter configuration. """
 
         # TODO: enter your code here
-        # Initialize GP model for f with matern kernel, variance 0.5, lengthscale 0.5 and smootheness parameter 2.5
-        self.objective_model = GaussianProcessRegressor(kernel=Matern(length_scale=0.5, nu=2.5))
-        # Initialize GP model for v with matern kernel, variance sqrt(2), lengthscale 0.5 and smootheness parameter 2.5
-        self.speed_model = GaussianProcessRegressor(kernel=Matern(length_scale=0.5, nu=2.5))
-        pass
+        max_samples = 100
+        self.x = np.zeros(shape=(max_samples, domain.shape[0]))
+        self.f = np.zeros(shape=(max_samples,))
+        self.v = np.zeros(shape=(max_samples,))
+        self.v_bias = 1.5
+        self.num_samples = 0
+        self.beta = 3
 
 
     def next_recommendation(self):
@@ -35,9 +37,10 @@ class BO_algo():
 
         # TODO: enter your code here
         # In implementing this function, you may use optimize_acquisition_function() defined below.
-        if self.p
-        
-        raise NotImplementedError
+        if self.num_samples < 5:
+            return domain[:, 0] + (domain[:, 1] - domain[:, 0]) * np.random.rand(domain.shape[0])
+        else:
+            return self.optimize_acquisition_function()
 
 
     def optimize_acquisition_function(self):
@@ -84,7 +87,13 @@ class BO_algo():
         """
 
         # TODO: enter your code here
-        raise NotImplementedError
+        mean_f, std_f = self.gpr_f.predict(np.atleast_2d(x), return_std=True)
+        ucb = mean_f + self.beta * std_f
+
+        mean_v, std_v = self.gpr_v.predict(np.atleast_2d(x), return_std=True)
+        prob_safe = norm.cdf((mean_v - SAFETY_THRESHOLD + self.v_bias) / std_v)
+
+        return ucb * prob_safe
 
 
     def add_data_point(self, x, f, v):
@@ -102,7 +111,18 @@ class BO_algo():
         """
 
         # TODO: enter your code here
-        raise NotImplementedError
+        self.x[self.num_samples] = np.atleast_1d(x)
+        self.f[self.num_samples] = f
+        self.v[self.num_samples] = v - self.v_bias
+        self.num_samples += 1
+        # print(x[0], f[0], v[0])
+
+        kernel_f = 0.5 * Matern(length_scale=0.5, length_scale_bounds="fixed", nu=2.5)
+        kernel_v = np.sqrt(2) * Matern(length_scale=0.5, length_scale_bounds="fixed", nu=2.5)
+        self.gpr_f = GaussianProcessRegressor(kernel=kernel_f, alpha=0.15**2)
+        self.gpr_v = GaussianProcessRegressor(kernel=kernel_v, alpha=0.0001**2)
+        self.gpr_f.fit(self.x[:self.num_samples], self.f[:self.num_samples])
+        self.gpr_v.fit(self.x[:self.num_samples], self.v[:self.num_samples])
 
     def get_solution(self):
         """
@@ -115,8 +135,8 @@ class BO_algo():
         """
 
         # TODO: enter your code here
-        raise NotImplementedError
-
+        self.beta = 0
+        return self.next_recommendation()
 
 """ Toy problem to check code works as expected """
 
