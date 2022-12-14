@@ -94,7 +94,6 @@ class Actor(nn.Module):
         # Hint: The logits_net returns for a given observation the log 
         # probabilities. You should use them to obtain a Categorical 
         # distribution.
-        # raise NotImplementedError
         return Categorical(logits=self.logits_net(obs))
 
     def _log_prob_from_distribution(self, pi, act):
@@ -119,7 +118,7 @@ class Actor(nn.Module):
 
         # TODO: Implement this function.
 
-        raise NotImplementedError
+        return pi.log_prob(act)
 
     def forward(self, obs, act=None):
         """
@@ -144,7 +143,11 @@ class Actor(nn.Module):
         # TODO: Implement this function.
         # Hint: If act is None, log_prob is also None.
 
-        raise NotImplementedError
+        pi = self._distribution(obs)
+        log_prob = None
+        if act is not None:
+            log_prob = self._log_prob_from_distribution(pi, act)
+        return pi, log_prob
 
 
 class Critic(nn.Module):
@@ -338,12 +341,12 @@ class Agent:
 
         with torch.no_grad():
             
-            action_distribution = self.actor(state)
+            action_distribution, _ = self.actor(state)
             action = action_distribution.sample()
 
             value_function = self.critic(state)
             
-            logp = self._log_prob_from_distribution(action, state)
+            logp = action_distribution.log_prob(action)
 
 
         return action, value_function, logp
