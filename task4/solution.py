@@ -259,8 +259,9 @@ class VPGBuffer:
         # TODO: Implement TD residuals calculation.
         # Hint: use the discount_cumsum function 
         # self.tdres_buf[path_slice] = ...
+        #from https://github.com/openai/spinningup/blob/master/spinup/algos/pytorch/vpg/vpg.py
         deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
-        self.tdres_buf[path_slice] = deltas
+        self.tdres_buf[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
 
 
         # TODO: Implement discounted rewards-to-go calculation. 
