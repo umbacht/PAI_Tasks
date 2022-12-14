@@ -12,6 +12,7 @@ import torch
 from torch.optim import Adam
 import torch.nn as nn
 
+from torch.distributions import Categorical
 
 def discount_cumsum(x, discount):
     """
@@ -89,11 +90,12 @@ class Actor(nn.Module):
 
         """
 
-        # TODO: Implement this function.
+        # TO DOne: Implement this function.
         # Hint: The logits_net returns for a given observation the log 
         # probabilities. You should use them to obtain a Categorical 
         # distribution.
-        raise NotImplementedError
+        # raise NotImplementedError
+        return Categorical(logits=self.logits_net(obs))
 
     def _log_prob_from_distribution(self, pi, act):
         """
@@ -305,7 +307,7 @@ class Agent:
 
     def step(self, state):
         """
-        Take an state and return action, value function, and log-likelihood
+        Take a state and return action, value function, and log-likelihood
         of chosen action.
 
         Parameters
@@ -322,11 +324,21 @@ class Agent:
             The log-probability of the action under the policy output distribution.
         """
         
-        # TODO: Implement this function.
+        # TO DOne: Implement this function.
         # Hint: This function is only called during inference. You should use
         # `torch.no_grad` to ensure that it does not interfer with the gradient computation.
 
-        return 0, 0, 0
+        with torch.no_grad():
+            
+            action_distribution = self.actor(state)
+            action = action_distribution.sample()
+
+            value_function = self.critic(state)
+            
+            logp = self._log_prob_from_distribution(action, state)
+
+
+        return action, value_function, logp
 
     def act(self, state):
         return self.step(state)[0]
@@ -349,10 +361,12 @@ class Agent:
         You SHOULD NOT change the arguments this function takes and what it outputs!
         """
 
-        # TODO: Implement this function.
+        # TO DOne: Implement this function.
         # Currently, this just returns a random action.
         
-        return np.random.choice([0, 1, 2, 3])
+        return self.act(torch.as_tensor(obs).float())
+
+        # return np.random.choice([0, 1, 2, 3])
 
 
 def train(env, seed=0):
