@@ -57,9 +57,9 @@ def mlp(sizes, activation, output_activation=nn.Identity):
     layers = []
     for i in range(len(sizes) - 2):
         layers.append(nn.Linear(sizes[i], sizes[i + 1]))
-        layers.append(activation)
+        layers.append(activation())
     layers.append(nn.Linear(sizes[-2], sizes[-1]))
-    layers.append(output_activation)
+    layers.append(output_activation())
 
     return nn.Sequential(*layers)
 
