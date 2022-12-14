@@ -452,11 +452,22 @@ def train(env, seed=0):
         #Hint: you need to compute a 'loss' such that its derivative with respect to the actor
         # parameters is the policy gradient. Then call loss.backwards() and actor_optimizer.step()
 
+        # data['logp'] contains no graident infomation (due to no_grad() in agent.step())
+        # Thus should recompute logp instead of using data['logp'] directly
+        _, logp_with_grad = agent.actor(data['obs'], data['act'])
+        actor_loss = -(data['tdres'] * logp_with_grad).mean()
+        actor_loss.backward()
+        actor_optimizer.step()
+
         # We suggest to do 100 iterations of value function updates
         for _ in range(100):
             critic_optimizer.zero_grad()
             #compute a loss for the value function, call loss.backwards() and then
             #critic_optimizer.step()
+            value_with_grad = agent.critic(data['obs'])
+            critic_loss = ((value_with_grad - data['ret']) ** 2).sum()
+            critic_loss.backward()
+            critic_optimizer.step()
 
 
     return agent
