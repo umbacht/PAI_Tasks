@@ -220,7 +220,11 @@ class VPGBuffer:
         assert self.ptr < self.max_size
 
         # TODO: Store new data in the respective buffers.
-
+        self.obs_buf[self.ptr] = obs
+        self.act_buf[self.ptr] = act
+        self.rew_buf[self.ptr] = rew
+        self.val_buf[self.ptr] = val
+        self.logp_buf[self.ptr] = logp
 
         # Update pointer after data is stored.
         self.ptr += 1
