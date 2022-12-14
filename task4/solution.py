@@ -229,7 +229,11 @@ class VPGBuffer:
         assert self.ptr < self.max_size
 
         # TODO: Store new data in the respective buffers.
-
+        self.obs_buf[self.ptr] = obs
+        self.act_buf[self.ptr] = act
+        self.rew_buf[self.ptr] = rew
+        self.val_buf[self.ptr] = val
+        self.logp_buf[self.ptr] = logp
 
         # Update pointer after data is stored.
         self.ptr += 1
@@ -264,11 +268,15 @@ class VPGBuffer:
         # TODO: Implement TD residuals calculation.
         # Hint: use the discount_cumsum function 
         # self.tdres_buf[path_slice] = ...
+        #from https://github.com/openai/spinningup/blob/master/spinup/algos/pytorch/vpg/vpg.py
+        deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
+        self.tdres_buf[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
 
 
         # TODO: Implement discounted rewards-to-go calculation. 
         # Hint: use the discount_cumsum function 
         # self.ret_buf[path_slice] = ...
+        self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
 
 
         # Update the path_start_idx
