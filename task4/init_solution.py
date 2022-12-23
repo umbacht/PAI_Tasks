@@ -11,7 +11,6 @@ from gym.spaces import Box, Discrete
 import torch
 from torch.optim import Adam
 import torch.nn as nn
-from torch.distributions import Categorical
 
 
 def discount_cumsum(x, discount):
@@ -55,14 +54,7 @@ def mlp(sizes, activation, output_activation=nn.Identity):
     # TODO: Implement this function.
     # Hint: Use nn.Sequential to stack multiple layers of the network.
 
-    layers = []
-    for i in range(len(sizes) - 2):
-        layers.append(nn.Linear(sizes[i], sizes[i + 1]))
-        layers.append(activation())
-    layers.append(nn.Linear(sizes[-2], sizes[-1]))
-    layers.append(output_activation())
-
-    return nn.Sequential(*layers)
+    raise NotImplementedError
 
 
 class Actor(nn.Module):
@@ -94,7 +86,7 @@ class Actor(nn.Module):
         # Hint: The logits_net returns for a given observation the log 
         # probabilities. You should use them to obtain a Categorical 
         # distribution.
-        return Categorical(logits=self.logits_net(obs))
+        raise NotImplementedError
 
     def _log_prob_from_distribution(self, pi, act):
         """
@@ -118,7 +110,7 @@ class Actor(nn.Module):
 
         # TODO: Implement this function.
 
-        return pi.log_prob(act)
+        raise NotImplementedError
 
     def forward(self, obs, act=None):
         """
@@ -143,11 +135,7 @@ class Actor(nn.Module):
         # TODO: Implement this function.
         # Hint: If act is None, log_prob is also None.
 
-        pi = self._distribution(obs)
-        log_prob = None
-        if act is not None:
-            log_prob = self._log_prob_from_distribution(pi, act)
-        return pi, log_prob
+        raise NotImplementedError
 
 
 class Critic(nn.Module):
@@ -232,11 +220,7 @@ class VPGBuffer:
         assert self.ptr < self.max_size
 
         # TODO: Store new data in the respective buffers.
-        self.obs_buf[self.ptr] = obs
-        self.act_buf[self.ptr] = act
-        self.rew_buf[self.ptr] = rew
-        self.val_buf[self.ptr] = val
-        self.logp_buf[self.ptr] = logp
+
 
         # Update pointer after data is stored.
         self.ptr += 1
@@ -270,13 +254,13 @@ class VPGBuffer:
 
         # TODO: Implement TD residuals calculation.
         # Hint: use the discount_cumsum function 
-        # from https://github.com/openai/spinningup/blob/master/spinup/algos/pytorch/vpg/vpg.py
-        deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
-        self.tdres_buf[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
+        # self.tdres_buf[path_slice] = ...
+
 
         # TODO: Implement discounted rewards-to-go calculation. 
         # Hint: use the discount_cumsum function 
-        self.ret_buf[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
+        # self.ret_buf[path_slice] = ...
+
 
         # Update the path_start_idx
         self.path_start_idx = self.ptr
@@ -335,17 +319,7 @@ class Agent:
         # Hint: This function is only called during inference. You should use
         # `torch.no_grad` to ensure that it does not interfer with the gradient computation.
 
-        with torch.no_grad():
-            
-            action_distribution, _ = self.actor(state)
-            action = action_distribution.sample()
-
-            value_function = self.critic(state)
-            
-            logp = action_distribution.log_prob(action)
-
-
-        return action, value_function, logp
+        return 0, 0, 0
 
     def act(self, state):
         return self.step(state)[0]
@@ -371,7 +345,7 @@ class Agent:
         # TODO: Implement this function.
         # Currently, this just returns a random action.
         
-        return self.act(torch.as_tensor(obs, dtype=torch.float32))
+        return np.random.choice([0, 1, 2, 3])
 
 
 def train(env, seed=0):
@@ -408,7 +382,7 @@ def train(env, seed=0):
     lam = 0.97
 
     # Learning rates for actor and critic function
-    # actor_lr = 3e-3
+    actor_lr = 3e-3
     critic_lr = 1e-3
 
     # Set up buffer
@@ -417,7 +391,7 @@ def train(env, seed=0):
     # Initialize the ADAM optimizer using the parameters
     # of the actor and then critic networks
     # TODO: Use these optimizers later to update the actor and critic networks.
-    # actor_optimizer = Adam(agent.actor.parameters(), lr=actor_lr)
+    actor_optimizer = Adam(agent.actor.parameters(), lr=actor_lr)
     critic_optimizer = Adam(agent.critic.parameters(), lr=critic_lr)
 
     # Initialize the environment
@@ -466,34 +440,16 @@ def train(env, seed=0):
         data = buf.get()
 
         # Do 1 policy gradient update
-        if epoch <= 15:
-            actor_lr = 5e-2
-        elif epoch <= 30:
-            actor_lr = 5e-3
-        else:
-            actor_lr = 5e-4
-        actor_optimizer = Adam(agent.actor.parameters(), lr=actor_lr)
         actor_optimizer.zero_grad() #reset the gradient in the actor optimizer
 
         #Hint: you need to compute a 'loss' such that its derivative with respect to the actor
         # parameters is the policy gradient. Then call loss.backwards() and actor_optimizer.step()
-
-        # data['logp'] contains no graident infomation (due to no_grad() in agent.step())
-        # Thus should recompute logp instead of using data['logp'] directly
-        _, logp_with_grad = agent.actor(data['obs'], data['act'])
-        actor_loss = -(data['tdres'] * logp_with_grad).mean()
-        actor_loss.backward()
-        actor_optimizer.step()
 
         # We suggest to do 100 iterations of value function updates
         for _ in range(100):
             critic_optimizer.zero_grad()
             #compute a loss for the value function, call loss.backwards() and then
             #critic_optimizer.step()
-            value_with_grad = agent.critic(data['obs'])
-            critic_loss = ((value_with_grad - data['ret']) ** 2).sum()
-            critic_loss.backward()
-            critic_optimizer.step()
 
 
     return agent
