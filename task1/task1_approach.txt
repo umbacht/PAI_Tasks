@@ -1,0 +1,2 @@
+The task was solved using the following aproach:
+We used a combination of the following kernels: RBF, WhiteKernel and Matern. To reduce computational cost the Nystroem approximation was used. For training the the training features were transformed using the Nystroem approximation. After transformation the training data was fitted to a linear Bayyesion Ridge Regressor. Predictions were performed after transforming the test features using the same Nystroem approximation.
